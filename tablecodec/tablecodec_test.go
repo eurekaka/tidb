@@ -490,3 +490,20 @@ func BenchmarkHasTablePrefixBuiltin(b *testing.B) {
 		k.HasPrefix(tablePrefix)
 	}
 }
+
+func BenchmarkEncodeValue(b *testing.B) {
+	row := make([]types.Datum, 7)
+	row[0] = types.NewIntDatum(100)
+	row[1] = types.NewBytesDatum([]byte("abc"))
+	row[2] = types.NewDecimalDatum(types.NewDecFromInt(1))
+	row[3] = types.NewMysqlEnumDatum(types.Enum{Name: "a", Value: 0})
+	row[4] = types.NewDatum(types.Set{Name: "a", Value: 0})
+	row[5] = types.NewDatum(types.BinaryLiteral{100})
+	row[6] = types.NewFloat32Datum(1.5)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		for _, d := range row {
+			EncodeValue(nil, d)
+		}
+	}
+}
