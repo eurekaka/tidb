@@ -43,8 +43,13 @@ TableReader_6	1999.00	root	data:TableRangeScan_5
 └─TableRangeScan_5	1999.00	cop[tikv]	table:t1, range:(0,+inf], keep order:false
 explain select t1.c1, t1.c2 from t1 where t1.c2 = 1;
 id	count	task	operator info
+<<<<<<< HEAD
 IndexReader_6	0.00	root	index:IndexRangeScan_5
 └─IndexRangeScan_5	0.00	cop[tikv]	table:t1, index:c2, range:[1,1], keep order:false
+=======
+IndexReader_7	0.00	root	index:IndexScan_6
+└─IndexScan_6	0.00	cop[tikv]	table:t1, index:c2, range:[1,1], keep order:false
+>>>>>>> 59c1fe2... planner, executor: support point get as a option of `DataSource`
 explain select * from t1 left join t2 on t1.c2 = t2.c1 where t1.c1 > 1;
 id	count	task	operator info
 HashLeftJoin_22	2481.25	root	left outer join, inner:TableReader_36, equal:[eq(test.t1.c2, test.t2.c1)]
@@ -60,9 +65,15 @@ Update_2	N/A	root	N/A
 explain delete from t1 where t1.c2 = 1;
 id	count	task	operator info
 Delete_4	N/A	root	N/A
+<<<<<<< HEAD
 └─IndexLookUp_11	0.00	root	
   ├─IndexRangeScan_9(Build)	0.00	cop[tikv]	table:t1, index:c2, range:[1,1], keep order:false
   └─TableRowIDScan_10(Probe)	0.00	cop[tikv]	table:t1, keep order:false
+=======
+└─IndexLookUp_12	0.00	root	
+  ├─IndexScan_10	0.00	cop[tikv]	table:t1, index:c2, range:[1,1], keep order:false
+  └─TableScan_11	0.00	cop[tikv]	table:t1, keep order:false
+>>>>>>> 59c1fe2... planner, executor: support point get as a option of `DataSource`
 explain select count(b.c2) from t1 a, t2 b where a.c1 = b.c2 group by a.c1;
 id	count	task	operator info
 Projection_11	1985.00	root	cast(Column#8, bigint(21) BINARY)->Column#7
@@ -87,9 +98,14 @@ IndexLookUp_11	0.00	root
   └─TableRowIDScan_9	0.00	cop[tikv]	table:t1, keep order:false
 explain select * from t1 where c1 = 1 and c2 > 1;
 id	count	task	operator info
+<<<<<<< HEAD
 TableReader_7	0.50	root	data:Selection_6
 └─Selection_6	0.50	cop[tikv]	gt(test.t1.c2, 1)
   └─TableRangeScan_5	1.00	cop[tikv]	table:t1, range:[1,1], keep order:false
+=======
+Selection_6	0.50	root	gt(test.t1.c2, 1)
+└─Point_Get_5	1.00	root	table:t1, handle:1
+>>>>>>> 59c1fe2... planner, executor: support point get as a option of `DataSource`
 explain select c1 from t1 where c1 in (select c2 from t2);
 id	count	task	operator info
 Projection_9	1985.00	root	test.t1.c1
@@ -166,6 +182,7 @@ id	count	task	operator info
 TableDual_5	0.00	root	rows:0
 explain select * from index_prune WHERE a = 1010010404050976781 AND b = 26467085526790 LIMIT 1, 1;
 id	count	task	operator info
+<<<<<<< HEAD
 IndexLookUp_14	1.00	root	limit embedded(offset:1, count:1)
 ├─Limit_13(Build)	1.00	cop[tikv]	offset:0, count:2
 │ └─IndexRangeScan_11	1.00	cop[tikv]	table:index_prune, index:a, b, range:[1010010404050976781 26467085526790,1010010404050976781 26467085526790], keep order:false
@@ -176,6 +193,18 @@ IndexLookUp_14	0.00	root	limit embedded(offset:1, count:0)
 ├─Limit_13(Build)	1.00	cop[tikv]	offset:0, count:1
 │ └─IndexRangeScan_11	1.00	cop[tikv]	table:index_prune, index:a, b, range:[1010010404050976781 26467085526790,1010010404050976781 26467085526790], keep order:false
 └─TableRowIDScan_12(Probe)	0.00	cop[tikv]	table:index_prune, keep order:false, stats:pseudo
+=======
+Limit_9	1.00	root	offset:1, count:1
+└─IndexLookUp_13	1.00	root	
+  ├─Point_Get_11	1.00	root	table:index_prune, index:a b
+  └─TableScan_12	1.00	cop[tikv]	table:index_prune, keep order:false
+explain select * from index_prune WHERE a = 1010010404050976781 AND b = 26467085526790 LIMIT 1, 0;
+id	count	task	operator info
+Limit_9	0.00	root	offset:1, count:0
+└─IndexLookUp_13	1.00	root	
+  ├─Point_Get_11	1.00	root	table:index_prune, index:a b
+  └─TableScan_12	1.00	cop[tikv]	table:index_prune, keep order:false
+>>>>>>> 59c1fe2... planner, executor: support point get as a option of `DataSource`
 explain select * from index_prune WHERE a = 1010010404050976781 AND b = 26467085526790 LIMIT 0, 1;
 id	count	task	operator info
 Point_Get_1	1.00	root	table:index_prune, index:a b
@@ -195,5 +224,10 @@ create table tbl(column1 int, column2 int, index idx(column1, column2));
 load stats 's/explain_easy_stats_tbl_dnf.json';
 explain select * from tbl where (column1=0 and column2=1) or (column1=1 and column2=3) or (column1=2 and column2=5);
 id	count	task	operator info
+<<<<<<< HEAD
 IndexReader_6	3.00	root	index:IndexRangeScan_5
 └─IndexRangeScan_5	3.00	cop[tikv]	table:tbl, index:column1, column2, range:[0 1,0 1], [1 3,1 3], [2 5,2 5], keep order:false
+=======
+IndexReader_7	3.00	root	index:IndexScan_6
+└─IndexScan_6	3.00	cop[tikv]	table:tbl, index:column1, column2, range:[0 1,0 1], [1 3,1 3], [2 5,2 5], keep order:false
+>>>>>>> 59c1fe2... planner, executor: support point get as a option of `DataSource`

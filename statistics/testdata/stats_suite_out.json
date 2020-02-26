@@ -3,8 +3,12 @@
     "Name": "TestUniqCompEqualEst",
     "Cases": [
       [
+<<<<<<< HEAD
         "IndexReader_6 1.00 root index:IndexRangeScan_5",
         "└─IndexRangeScan_5 1.00 cop[tikv] table:t, index:a, b, range:[1 5,1 5], keep order:false"
+=======
+        "Point_Get_5 1.00 root table:t, index:a b"
+>>>>>>> 59c1fe2... planner, executor: support point get as a option of `DataSource`
       ]
     ]
   },
@@ -84,8 +88,13 @@
     "Name": "TestSelectCombinedLowBound",
     "Cases": [
       [
+<<<<<<< HEAD
         "IndexReader_6 7.00 root index:IndexRangeScan_5",
         "└─IndexRangeScan_5 7.00 cop[tikv] table:t, index:kid, pid, range:[1,1], keep order:false"
+=======
+        "IndexReader_7 7.00 root index:IndexScan_6",
+        "└─IndexScan_6 7.00 cop[tikv] table:t, index:kid, pid, range:[1,1], keep order:false"
+>>>>>>> 59c1fe2... planner, executor: support point get as a option of `DataSource`
       ]
     ]
   }

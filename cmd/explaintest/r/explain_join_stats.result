@@ -7,6 +7,7 @@ load stats 's/explain_join_stats_lo.json';
 explain select count(*) from e, lo where lo.a=e.a and e.b=22336;
 id	count	task	operator info
 StreamAgg_13	1.00	root	funcs:count(1)->Column#5
+<<<<<<< HEAD
 └─HashRightJoin_89	19977.00	root	inner join, inner:TableReader_50, equal:[eq(test.lo.a, test.e.a)]
   ├─TableReader_50(Build)	250.00	root	data:TableFullScan_49
   │ └─TableFullScan_49	250.00	cop[tikv]	table:lo, keep order:false
@@ -14,6 +15,15 @@ StreamAgg_13	1.00	root	funcs:count(1)->Column#5
     ├─IndexRangeScan_58(Build)	19977.00	cop[tikv]	table:e, index:b, range:[22336,22336], keep order:false
     └─Selection_60(Probe)	19977.00	cop[tikv]	not(isnull(test.e.a))
       └─TableRowIDScan_59	19977.00	cop[tikv]	table:e, keep order:false
+=======
+└─HashRightJoin_90	19977.00	root	inner join, inner:TableReader_50, equal:[eq(test.lo.a, test.e.a)]
+  ├─TableReader_50	250.00	root	data:TableScan_49
+  │ └─TableScan_49	250.00	cop[tikv]	table:lo, range:[-inf,+inf], keep order:false
+  └─IndexLookUp_62	19977.00	root	
+    ├─IndexScan_59	19977.00	cop[tikv]	table:e, index:b, range:[22336,22336], keep order:false
+    └─Selection_61	19977.00	cop[tikv]	not(isnull(test.e.a))
+      └─TableScan_60	19977.00	cop[tikv]	table:e, keep order:false
+>>>>>>> 59c1fe2... planner, executor: support point get as a option of `DataSource`
 explain select /*+ TIDB_INLJ(e) */ count(*) from e, lo where lo.a=e.a and e.b=22336;
 id	count	task	operator info
 StreamAgg_12	1.00	root	funcs:count(1)->Column#5
