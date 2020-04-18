@@ -5328,6 +5328,34 @@ func (s *testIntegrationSuite) TestIssue12301(c *C) {
 	tk.MustQuery("select * from t where d = i").Check(testkit.Rows("123456789012 123456789012"))
 }
 
+func (s *testIntegrationSerialSuite) TestHashPartitionWithPlanCache(c *C) {
+	tk := testkit.NewTestKit(c, s.store)
+	orgEnable := plannercore.PreparedPlanCacheEnabled()
+	defer func() {
+		plannercore.SetPreparedPlanCache(orgEnable)
+	}()
+	plannercore.SetPreparedPlanCache(true)
+	var err error
+	tk.Se, err = session.CreateSession4TestWithOpt(s.store, &session.Opt{
+		PreparedPlanCache: kvcache.NewSimpleLRUCache(100, 0.1, math.MaxUint64),
+	})
+	c.Assert(err, IsNil)
+
+	tk.MustExec("use test")
+	tk.MustExec("drop table if exists employees")
+	tk.MustExec("CREATE TABLE employees (id INT NOT NULL, hired DATE NOT NULL DEFAULT '1970-01-01') PARTITION BY HASH(YEAR(hired)) PARTITIONS 2")
+	tk.MustExec("insert into employees values(1, '2020-01-01'), (2,'2019-12-01')")
+	tk.MustExec("prepare stmt from 'select * from employees where hired = ?'")
+	tk.MustExec("set @a='2020-01-01'")
+	tk.MustQuery("execute stmt using @a").Check(testkit.Rows(
+		"1 2020-01-01",
+	))
+	tk.MustExec("set @a='2019-12-01'")
+	tk.MustQuery("execute stmt using @a").Check(testkit.Rows(
+		"2 2019-12-01",
+	))
+}
+
 func (s *testIntegrationSerialSuite) TestIssue15315(c *C) {
 	tk := testkit.NewTestKit(c, s.store)
 	tk.MustExec("use test")

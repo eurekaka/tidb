@@ -57,14 +57,14 @@ func (p *hashPartitionPruner) reduceColumnEQ() bool {
 	}
 	for i := 0; i < p.numColumn; i++ {
 		father := p.unionSet.FindRoot(i)
-		if p.constantMap[i] != nil {
-			if p.constantMap[father] != nil {
+		if con1 := p.constantMap[i]; con1 != nil {
+			if con2 := p.constantMap[father]; con2 != nil {
 				// May has conflict here.
-				if !p.constantMap[father].Equal(p.ctx, p.constantMap[i]) {
+				if !con2.Equal(p.ctx, con1) && !ContainMutableConst(p.ctx, []Expression{con1, con2}) {
 					return true
 				}
 			} else {
-				p.constantMap[father] = p.constantMap[i]
+				p.constantMap[father] = con1
 			}
 		}
 	}
@@ -78,17 +78,19 @@ func (p *hashPartitionPruner) reduceColumnEQ() bool {
 }
 
 func (p *hashPartitionPruner) reduceConstantEQ() bool {
-	for _, con := range p.conditions {
-		col, cond := validEqualCond(p.ctx, con)
+	for _, cond := range p.conditions {
+		col, con := validEqualCond(p.ctx, cond, true)
 		if col != nil {
 			id := p.getColID(col)
-			if p.constantMap[id] != nil {
-				if p.constantMap[id].Equal(p.ctx, cond) {
-					continue
+			if prevCon := p.constantMap[id]; prevCon != nil {
+				if !prevCon.Equal(p.ctx, con) && !ContainMutableConst(p.ctx, []Expression{con, prevCon}) {
+					return true
 				}
-				return true
+				if !ContainMutableConst(p.ctx, []Expression{prevCon}) {
+					con = prevCon
+				}
 			}
-			p.constantMap[id] = cond
+			p.constantMap[id] = con
 		}
 	}
 	return false
@@ -100,11 +102,11 @@ func (p *hashPartitionPruner) tryEvalPartitionExpr(piExpr Expression) (val int64
 		if pi.FuncName.L == ast.Plus || pi.FuncName.L == ast.Minus || pi.FuncName.L == ast.Mul || pi.FuncName.L == ast.Div {
 			left, right := pi.GetArgs()[0], pi.GetArgs()[1]
 			leftVal, ok, isNil := p.tryEvalPartitionExpr(left)
-			if !ok {
+			if !ok || isNil {
 				return 0, ok, isNil
 			}
 			rightVal, ok, isNil := p.tryEvalPartitionExpr(right)
-			if !ok {
+			if !ok || isNil {
 				return 0, ok, isNil
 			}
 			switch pi.FuncName.L {
@@ -115,6 +117,9 @@ func (p *hashPartitionPruner) tryEvalPartitionExpr(piExpr Expression) (val int64
 			case ast.Mul:
 				return rightVal * leftVal, true, false
 			case ast.Div:
+				if leftVal == 0 {
+					return 0, false, false
+				}
 				return rightVal / leftVal, true, false
 			}
 		} else if pi.FuncName.L == ast.Year || pi.FuncName.L == ast.Month || pi.FuncName.L == ast.ToDays {
@@ -137,7 +142,7 @@ func (p *hashPartitionPruner) tryEvalPartitionExpr(piExpr Expression) (val int64
 			return 0, false, false
 		}
 		if val.IsNull() {
-			return 0, false, true
+			return 0, true, !ContainMutableConst(p.ctx, []Expression{pi})
 		}
 		if val.Kind() == types.KindInt64 {
 			return val.GetInt64(), true, false
